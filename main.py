@@ -90,35 +90,27 @@ class LevelWindow(QMainWindow):
         self.palette.setBrush(QPalette.Window, QBrush(self.pixmap))
         self.setPalette(self.palette)
 
+        # Чтение слов и синонимов из файлов
+        with codecs.open('слова.txt', 'r', 'utf-8') as f:
+            self.words = [word.strip() for word in f]
+        self.synonyms = {}
+        with codecs.open('синонимы.txt', 'r', 'utf-8') as f:
+            for line in f:
+                parts = line.strip().split(',')
+                word = parts[0]
+                word_synonyms = parts[1:]
+                self.synonyms[word] = word_synonyms
+
+        # Выбор первого слова из списка
+        self.current_word = self.words.pop(0)
+
         # Создание текстовых полей
         self.text_field_center = QTextEdit(self)
         self.text_field_center.setFont(QFont('Comic Sans', 30))
         self.text_field_center.setStyleSheet("background-color: white; border-radius: 7px; border: 2px solid black;")
         self.text_field_center.setReadOnly(True)  # Пользователь не может вводить текст
         self.text_field_center.setFixedSize(QSize(500, 80))  # Установка фиксированного размера
-        # Чтение слов из файла
-        with codecs.open('слова.txt', 'r', 'utf-8') as f:
-            self.words = [word.strip() for word in f]
-
-        # Создание словаря синонимов
-        self.synonyms = {
-            'друг': ['приятель', 'товарищ'],
-            'дорога':['путь', 'тропинка', 'тропа'],
-            'холод':['мороз', 'морозец'],
-            'большой':['огромный', 'массивный', 'громадный'],
-            'воевать':['сражаться', 'биться', 'драться'],
-            'ходьба':['движение', 'передвижение'],
-            'дом':['здание', 'строение', 'сооружение', 'постройка'],
-            'парк':['сад', 'сквер'],
-            'свобода':['воля', 'независимость'],
-            'враг':['неприятель', 'недруг', 'соперник', 'противник', 'оппонент'],
-            'дело':['занятие'],
-        }
-
-        # Выбор случайного слова и установка текста
-        random_word = random.choice(self.words)
-        self.words.remove(random_word)  # Удалить слово из списка после использования
-        self.text_field_center.setText(random_word)
+        self.text_field_center.setText(self.current_word)
         self.text_field_center.setAlignment(Qt.AlignCenter)
 
         self.text_field_bottom = CustomTextEdit(self)
@@ -144,7 +136,16 @@ class LevelWindow(QMainWindow):
         self.incorrect_label.adjustSize()
         self.incorrect_label.hide()  # Скрытие сообщения
 
-        # Расположение текстовых полей
+        # Создание сообщения о завершении игры
+        self.finished_label = QLabel("Поздравляем! Вы прошли игру!", self)
+        self.finished_label.setFont(QFont('Comic Sans', 30))
+        self.finished_label.setStyleSheet("background-color: white; border: 2px solid black; color: black;")
+        self.finished_label.setAlignment(Qt.AlignCenter)  # Выравнивание текста по центру
+        self.finished_label.adjustSize()
+        self.finished_label.hide()  # Скрытие сообщения
+
+
+         # Расположение текстовых полей
         layout_center = QHBoxLayout()
         layout_center.addStretch()
         layout_center.addWidget(self.text_field_center)
@@ -160,13 +161,14 @@ class LevelWindow(QMainWindow):
         layout.addLayout(layout_center)
         layout.addSpacing(100)  # Добавление отступа
         layout.addLayout(layout_bottom)
+        layout.addWidget(self.finished_label)  # Добавление метки в макет
         layout.addStretch()
 
         central_widget = QWidget()
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
 
-       # Создание кнопки паузы
+        # Создание кнопки паузы
         self.pause_button = QPushButton(self)
         self.pause_button.setIcon(QIcon('pause.png'))
         self.pause_button.setIconSize(QSize(50, 50))
@@ -194,24 +196,17 @@ class LevelWindow(QMainWindow):
         self.continue_button.clicked.connect(self.hide_buttons)  # Подключение слота
         self.continue_button.hide()  # Скрытие кнопки
 
-          # Создание надписи
+        # Создание надписи
         self.level = 1
         self.level_label = QLabel(f"Ур.{self.level}", self)
         self.level_label.setFont(QFont('Comic Sans', 30))
         self.level_label.setStyleSheet("background: transparent; color: black;")
         self.level_label.adjustSize()
 
-        # Создание сообщения о завершении игры
-        self.finished_label = QLabel("Поздравляем! Вы прошли игру!", self)
-        self.finished_label.setFont(QFont('Comic Sans', 30))
-        self.finished_label.setStyleSheet("background-color: white; border: 2px solid black; color: black;")
-        self.finished_label.adjustSize()
-        self.finished_label.hide()  # Скрытие сообщения
 
     def showEvent(self, event):
-    # Позиционирование надписи в правом нижнем углу
+        # Позиционирование надписи в правом нижнем углу
         self.level_label.move(self.width() - self.level_label.width() - 10, self.height() - self.level_label.height() - 10)
-
 
     def show_buttons(self):
         """Показывает дополнительные кнопки при нажатии на кнопку паузы."""
@@ -225,35 +220,30 @@ class LevelWindow(QMainWindow):
 
     def check_synonym(self):
         """Проверяет, является ли введенное пользователем слово синонимом отображаемого слова."""
-        word = self.text_field_center.toPlainText()
         user_input = self.text_field_bottom.toPlainText()
 
-        if user_input in self.synonyms.get(word, []):
+        if user_input in self.synonyms.get(self.current_word, []):
             # Если введенное пользователем слово является синонимом отображаемого слова
             self.correct_label.show()  # Показать сообщение
             QTimer.singleShot(1000, self.correct_label.hide)  # Скрыть сообщение через 1 секунду
             self.text_field_bottom.clear()  # Очистить нижнее текстовое поле
             self.text_field_bottom.setAlignment(Qt.AlignCenter)  # Выравнивание текста по центру в нижнем текстовом поле
             if self.words:  # Если в списке еще есть слова
-                new_word = random.choice(self.words)  # Выбрать новое слово
-                self.words.remove(new_word)  # Удалить слово из списка после использования
-                self.text_field_center.setText(new_word)  # Установить новое слово
+                self.current_word = self.words.pop(0)  # Выбрать следующее слово из списка
+                self.text_field_center.setText(self.current_word)  # Установить новое слово
                 self.text_field_center.setAlignment(Qt.AlignCenter)  # Выравнивание текста по центру
-                self.level += 1  # Увеличиваем уровень на 1
-                self.level_label.setText(f"Ур.{self.level}")  # Обновляем текст метки уровня
-                self.level_label.adjustSize()  # Обновляем размер метки уровня
-                self.level_label.move(self.width() - self.level_label.width() - 10, self.height() - self.level_label.height() - 10)  # Обновляем позицию метки уровня
             else:
                 self.text_field_center.hide()  # Скрыть центральное текстовое поле
                 self.text_field_bottom.hide()  # Скрыть нижнее текстовое поле
-                self.finished_label.setText("Поздравляем! Вы прошли игру")  # Сообщение, когда все слова использованы
-                self.finished_label.adjustSize()  # Обновляем размер метки
                 self.finished_label.move((self.width() - self.finished_label.width()) // 2, (self.height() - self.finished_label.height()) // 2)  # Позиционирование сообщения по центру экрана
                 self.finished_label.show()  # Показать сообщение
+            self.level += 1  # Увеличиваем уровень на 1
+            self.level_label.setText(f"Ур.{self.level}")  # Обновляем текст метки уровня
+            self.level_label.adjustSize()  # Обновляем размер метки уровня
+            self.level_label.move(self.width() - self.level_label.width() - 10, self.height() - self.level_label.height() - 10)  # Обновляем позицию метки уровня
         else:
             self.incorrect_label.show()  # Показать сообщение "НЕВЕРНО!"
             QTimer.singleShot(1000, self.incorrect_label.hide)  # Скрыть сообщение через 1 секунду
-
 
 app = QApplication([])
 window = MainWindow()
