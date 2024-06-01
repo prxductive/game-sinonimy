@@ -70,9 +70,14 @@ class CustomTextEdit(QTextEdit):
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
+            self.setText(self.toPlainText().lower())
             self.returnPressed.emit()
+            # Установка выравнивания по центру после ввода текста
+            self.setAlignment(Qt.AlignCenter)
         else:
             super().keyPressEvent(event)
+
+
 
 class LevelWindow(QMainWindow):
     def __init__(self):
@@ -212,15 +217,17 @@ class LevelWindow(QMainWindow):
         """Показывает дополнительные кнопки при нажатии на кнопку паузы."""
         self.quit_button.show()
         self.continue_button.show()
+        self.text_field_bottom.setReadOnly(True)
 
     def hide_buttons(self):
         """Скрывает дополнительные кнопки при нажатии на кнопку continue."""
         self.quit_button.hide()
         self.continue_button.hide()
+        self.text_field_bottom.setReadOnly(False)
 
     def check_synonym(self):
         """Проверяет, является ли введенное пользователем слово синонимом отображаемого слова."""
-        user_input = self.text_field_bottom.toPlainText()
+        user_input = self.text_field_bottom.toPlainText().strip().lower()
 
         if user_input in self.synonyms.get(self.current_word, []):
             # Если введенное пользователем слово является синонимом отображаемого слова
