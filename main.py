@@ -26,7 +26,7 @@ class MainWindow(QMainWindow):
         self.button_play.setFont(QFont('Comic Sans', 30))
         self.button_play.setFixedSize(400, 80)
         self.button_play.setStyleSheet("""
-background-image: url('Играть.png');
+background-image: url('Играть.jpg');
 background-repeat: no-repeat;
 background-position: center;
 background-color: rgb(63, 206, 77);
