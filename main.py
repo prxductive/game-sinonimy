@@ -1,9 +1,11 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QTextEdit, QLabel, QVBoxLayout, QHBoxLayout, QWidget
+import os
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QTextEdit, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QSizePolicy
 from PySide6.QtGui import QFont, QIcon, QPixmap, QPalette, QBrush
 from PySide6.QtCore import Qt, QSize, Signal, QTimer
 import sys
 import random
 import codecs
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -13,57 +15,72 @@ class MainWindow(QMainWindow):
         self.setGeometry(0, 0, 1920, 1080)
         self.move(0, 0)
 
-        # Загрузка изображения
-        self.pixmap = QPixmap('sirenpink.png')
+        # Базовый путь к файлам проекта
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
 
-        # Установка изображения в качестве фона
+        # Загрузка фонового изображения
+        background_path = os.path.join(self.base_dir, "sirenpink.png")
+        self.pixmap = QPixmap(background_path)
         self.palette = QPalette()
         self.palette.setBrush(QPalette.Window, QBrush(self.pixmap))
         self.setPalette(self.palette)
 
+        # Кнопка "ИГРАТЬ"
         self.button_play = QPushButton("ИГРАТЬ", self)
         self.button_play.clicked.connect(self.button_play_clicked)
         self.button_play.setFont(QFont('Comic Sans', 30))
         self.button_play.setFixedSize(400, 80)
         self.button_play.setStyleSheet("""
-background-image: url('Играть.jpg');
-background-repeat: no-repeat;
-background-position: center;
-background-color: rgb(63, 206, 77);
-color: white;
-border-radius: 7px;
-""")
+            background-image: url('Играть.jpg');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: rgb(63, 206, 77);
+            color: white;
+            border-radius: 7px;
+        """)
 
+        # Кнопка "ВЫХОД"
         self.button_exit = QPushButton("ВЫХОД", self)
         self.button_exit.setFont(QFont('Comic Sans', 30))
         self.button_exit.setFixedSize(400, 80)
         self.button_exit.setStyleSheet("""
-background-image: url('Выход.jpg');
-background-repeat: no-repeat;
-background-position: center;
-background-color: rgb(229, 109, 109);
-color: white;
-border-radius: 7px;
-""")
+            background-image: url('Выход.jpg');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: rgb(229, 109, 109);
+            color: white;
+            border-radius: 7px;
+        """)
         self.button_exit.clicked.connect(self.close)
 
+        # Заголовок "ПОДБЕРИ СИНОНИМ"
         self.label = QLabel("ПОДБЕРИ СИНОНИМ", parent=self)
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setFont(QFont('Comic Sans', 30))
         self.label.setStyleSheet("background: transparent")
         self.label.adjustSize()
 
-        self.level_window = LevelWindow()
+        # Создание окна уровня
+        self.level_window = LevelWindow(self.base_dir)
 
     def showEvent(self, event):
-
-        self.button_play.move(self.width() // 2 - self.button_play.width() // 2, self.height() // 3 - self.button_play.height() // 2 + 20)
-        self.button_exit.move(self.width() // 2 - self.button_exit.width() // 2, self.height() // 2 - self.button_exit.height() // 2 - 20)
-        self.label.move(self.width() // 2 - self.label.width() // 2, 2 * self.height() // 3 - self.label.height() // 2 + 100)
+        self.button_play.move(
+            self.width() // 2 - self.button_play.width() // 2,
+            self.height() // 3 - self.button_play.height() // 2 + 20
+        )
+        self.button_exit.move(
+            self.width() // 2 - self.button_exit.width() // 2,
+            self.height() // 2 - self.button_exit.height() // 2 - 20
+        )
+        self.label.move(
+            self.width() // 2 - self.label.width() // 2,
+            2 * self.height() // 3 - self.label.height() // 2 + 100
+        )
 
     def button_play_clicked(self):
         self.level_window.showFullScreen()
         self.hide()
+
 
 class CustomTextEdit(QTextEdit):
     returnPressed = Signal()
@@ -72,34 +89,35 @@ class CustomTextEdit(QTextEdit):
         if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
             self.setText(self.toPlainText().lower())
             self.returnPressed.emit()
-            # Установка выравнивания по центру после ввода текста
             self.setAlignment(Qt.AlignCenter)
         else:
             super().keyPressEvent(event)
 
 
-
 class LevelWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, base_dir):
         super().__init__()
         self.setWindowTitle("Синонимы")
-
         self.setGeometry(0, 0, 1920, 1080)
         self.move(0, 0)
+        self.base_dir = base_dir
 
-        # Загрузка изображения
-        self.pixmap = QPixmap('blue.png')
-
-        # Установка изображения в качестве фона
+        # Загрузка фонового изображения
+        background_path = os.path.join(self.base_dir, "blue.png")
+        self.pixmap = QPixmap(background_path)
         self.palette = QPalette()
         self.palette.setBrush(QPalette.Window, QBrush(self.pixmap))
         self.setPalette(self.palette)
 
         # Чтение слов и синонимов из файлов
-        with codecs.open('слова.txt', 'r', 'utf-8') as f:
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        words_path = os.path.join(self.base_dir,   "words.txt")
+        synonyms_path = os.path.join(self.base_dir,  "synonyms.txt")
+
+        with codecs.open(words_path, 'r', 'utf-8') as f:
             self.words = [word.strip() for word in f]
         self.synonyms = {}
-        with codecs.open('синонимы.txt', 'r', 'utf-8') as f:
+        with codecs.open(synonyms_path, 'r', 'utf-8') as f:
             for line in f:
                 parts = line.strip().split(',')
                 word = parts[0]
@@ -173,9 +191,11 @@ class LevelWindow(QMainWindow):
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
 
+
         # Создание кнопки паузы
         self.pause_button = QPushButton(self)
-        self.pause_button.setIcon(QIcon('pause.png'))
+        pause_path = os.path.join(self.base_dir, "pause.png")
+        self.pause_button.setIcon(QIcon(pause_path))
         self.pause_button.setIconSize(QSize(50, 50))
         self.pause_button.setFixedSize(QSize(50, 50))
         self.pause_button.move(10, 10)  # Перемещение кнопки в левый верхний угол
@@ -184,7 +204,8 @@ class LevelWindow(QMainWindow):
 
         # Создание дополнительных кнопок
         self.quit_button = QPushButton(self)
-        self.quit_button.setIcon(QIcon('quit.png'))
+        quit_path = os.path.join(self.base_dir, "quit.png")
+        self.quit_button.setIcon(QIcon(quit_path))
         self.quit_button.setIconSize(QSize(50, 50))
         self.quit_button.setFixedSize(QSize(50, 50))
         self.quit_button.move(70, 10)
@@ -192,8 +213,10 @@ class LevelWindow(QMainWindow):
         self.quit_button.clicked.connect(self.close)  # Подключение слота
         self.quit_button.hide()  # Скрытие кнопки
 
+
         self.continue_button = QPushButton(self)
-        self.continue_button.setIcon(QIcon('continue.png'))
+        continue_path = os.path.join(self.base_dir, "continue.png")
+        self.continue_button.setIcon(QIcon(continue_path))
         self.continue_button.setIconSize(QSize(50, 50))
         self.continue_button.setFixedSize(QSize(50, 50))
         self.continue_button.move(130, 10)
@@ -256,4 +279,3 @@ app = QApplication([])
 window = MainWindow()
 window.showFullScreen()
 sys.exit(app.exec())
-
